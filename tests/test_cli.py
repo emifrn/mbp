@@ -266,6 +266,55 @@ class TestConfigValidation:
         assert "Error" in result.output
 
 
+class TestDeviceOption:
+    def test_log_bp_with_device(self, runner):
+        result = runner.invoke(cli, ["log", "bp", "120", "80", "--device", "home"])
+        assert result.exit_code == 0
+
+    def test_log_weight_with_device(self, runner):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        result = runner.invoke(cli, ["log", "weight", "75.0", "--device", "pharmacy"])
+        assert result.exit_code == 0
+
+    def test_report_shows_device(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80", "--device", "home"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert result.exit_code == 0
+        assert "home" in result.output
+
+    def test_report_filter_by_device(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80", "--device", "home"])
+        runner.invoke(cli, ["log", "bp", "130", "85", "--device", "pharmacy"])
+        result = runner.invoke(cli, ["report", "--type", "bp", "--device", "home"])
+        assert result.exit_code == 0
+        assert "120" in result.output
+        assert "130" not in result.output
+
+    def test_default_bp_device_from_config(self, runner):
+        runner.invoke(cli, ["config", "--bp-device", "Omron M3"])
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert "Omron" in result.output
+
+    def test_default_weight_device_from_config(self, runner):
+        runner.invoke(cli, ["config", "--weight-unit", "kg", "--weight-device", "Withings"])
+        runner.invoke(cli, ["log", "weight", "75.0"])
+        result = runner.invoke(cli, ["report", "--type", "weight"])
+        assert "Withings" in result.output
+
+    def test_bp_device_flag_overrides_default(self, runner):
+        runner.invoke(cli, ["config", "--bp-device", "Omron M3"])
+        runner.invoke(cli, ["log", "bp", "120", "80", "--device", "Beurer"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert "Beurer" in result.output
+
+    def test_export_includes_device(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80", "--device", "home"])
+        result = runner.invoke(cli, ["export", "--type", "bp"])
+        assert result.exit_code == 0
+        assert "home" in result.output
+
+
 class TestUserOption:
     def test_report_other_user_empty(self, runner):
         runner.invoke(cli, ["log", "bp", "120", "80"])

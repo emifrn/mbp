@@ -78,9 +78,11 @@ def log():
 @click.argument("diastolic", type=int)
 @click.option("--pulse", "-p", type=int, default=None, help="Heart rate (bpm)")
 @click.option("--note", "-n", default=None, help="Optional note")
+@click.option("--device", default=None, help="Device or location name (e.g. 'home', 'pharmacy')")
 @click.option("--date", "-d", default=None, callback=_parse_date, is_eager=False,
               help="Timestamp (YYYY-MM-DD or YYYY-MM-DD HH:MM), defaults to now")
-def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None, date: datetime | None):
+def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None,
+           device: str | None, date: datetime | None):
     """Log a blood pressure reading (SYSTOLIC DIASTOLIC)."""
     try:
         result = validate.validate_bp(systolic, diastolic, pulse)
@@ -96,6 +98,7 @@ def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None, d
         diastolic=result.diastolic,
         pulse=result.pulse,
         note=note,
+        device=device or config.get_bp_device(),
         username=_current_user(),
         timestamp=date or datetime.now(),
     )
@@ -117,9 +120,10 @@ def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None, d
 @log.command(name="weight")
 @click.argument("value", type=float)
 @click.option("--note", "-n", default=None, help="Optional note")
+@click.option("--device", default=None, help="Device or location name (e.g. 'home', 'pharmacy')")
 @click.option("--date", "-d", default=None, callback=_parse_date, is_eager=False,
               help="Timestamp (YYYY-MM-DD or YYYY-MM-DD HH:MM), defaults to now")
-def log_weight(value: float, note: str | None, date: datetime | None):
+def log_weight(value: float, note: str | None, device: str | None, date: datetime | None):
     """Log a weight reading."""
     unit = config.get_weight_unit()
     try:
@@ -132,6 +136,7 @@ def log_weight(value: float, note: str | None, date: datetime | None):
         value_kg=value_kg,
         unit=unit,
         note=note,
+        device=device or config.get_weight_device(),
         username=_current_user(),
         timestamp=date or datetime.now(),
     )
@@ -145,6 +150,8 @@ def log_weight(value: float, note: str | None, date: datetime | None):
 
 @cli.command(name="config")
 @click.option("--name", default=None, help="Your name (used to identify readings)")
+@click.option("--bp-device", default=None, help="Default BP monitor model (e.g. 'Omron M3')")
+@click.option("--weight-device", default=None, help="Default scale model (e.g. 'Withings Body')")
 @click.option(
     "--weight-unit",
     type=click.Choice(["kg", "lbs"], case_sensitive=False),
@@ -161,10 +168,19 @@ def log_weight(value: float, note: str | None, date: datetime | None):
     default=None,
     help="Your height (in the current height unit)",
 )
-def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | None, height: float | None):
+def config_cmd(name: str | None, bp_device: str | None, weight_device: str | None,
+               weight_unit: str | None, height_unit: str | None, height: float | None):
     """View or update configuration."""
     changed = False
     try:
+        if bp_device:
+            config.set_bp_device(bp_device)
+            console.print(f"[green]Default BP device set to:[/green] {bp_device}")
+            changed = True
+        if weight_device:
+            config.set_weight_device(weight_device)
+            console.print(f"[green]Default weight device set to:[/green] {weight_device}")
+            changed = True
         if name:
             config.set_name(name)
             console.print(f"[green]Name set to:[/green] {name}")
@@ -190,6 +206,10 @@ def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | Non
         cfg = config.load_config()
         name_val = cfg.get("name") or f"{getpass.getuser()} [dim](system user, set with --name)[/dim]"
         console.print(f"Name:        [cyan]{name_val}[/cyan]")
+        bp_dev = cfg.get("bp_device") or "[dim]not set[/dim]"
+        console.print(f"BP device:   [cyan]{bp_dev}[/cyan]")
+        w_dev = cfg.get("weight_device") or "[dim]not set[/dim]"
+        console.print(f"Weight dev:  [cyan]{w_dev}[/cyan]")
         unit = cfg.get("weight_unit", "kg (default)")
         console.print(f"Weight unit: [cyan]{unit}[/cyan]")
         height_cm = cfg.get("height_cm")
@@ -210,7 +230,9 @@ def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | Non
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
 @click.option("--user", "-u", default=None, help="User name (default: current user)")
-def report(days: int | None, from_date: datetime | None, to_date: datetime | None, metric: str, user: str | None):
+@click.option("--device", default=None, help="Filter by device name")
+def report(days: int | None, from_date: datetime | None, to_date: datetime | None,
+           metric: str, user: str | None, device: str | None):
     """Show readings in a table."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
     user = user or _current_user()
@@ -218,12 +240,12 @@ def report(days: int | None, from_date: datetime | None, to_date: datetime | Non
 
     if metric in ("bp", "all"):
         console.print("\n[bold]Blood Pressure[/bold]")
-        readings = db.query_bp(conn, user, from_dt, to_dt)
+        readings = db.query_bp(conn, user, from_dt, to_dt, device=device)
         rpt.print_bp_table(readings)
 
     if metric in ("weight", "all"):
         console.print("\n[bold]Weight[/bold]")
-        readings = db.query_weight(conn, user, from_dt, to_dt)
+        readings = db.query_weight(conn, user, from_dt, to_dt, device=device)
         rpt.print_weight_table(readings, height_cm=config.get_height_cm())
 
 
@@ -235,7 +257,9 @@ def report(days: int | None, from_date: datetime | None, to_date: datetime | Non
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
 @click.option("--user", "-u", default=None, help="User name (default: current user)")
-def stats(days: int | None, from_date: datetime | None, to_date: datetime | None, metric: str, user: str | None):
+@click.option("--device", default=None, help="Filter by device name")
+def stats(days: int | None, from_date: datetime | None, to_date: datetime | None,
+          metric: str, user: str | None, device: str | None):
     """Show summary statistics and trends."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
     user = user or _current_user()
@@ -243,12 +267,12 @@ def stats(days: int | None, from_date: datetime | None, to_date: datetime | None
 
     if metric in ("bp", "all"):
         console.print("\n[bold]Blood Pressure Stats[/bold]")
-        readings = db.query_bp(conn, user, from_dt, to_dt)
+        readings = db.query_bp(conn, user, from_dt, to_dt, device=device)
         rpt.print_bp_stats(readings)
 
     if metric in ("weight", "all"):
         console.print("\n[bold]Weight Stats[/bold]")
-        readings = db.query_weight(conn, user, from_dt, to_dt)
+        readings = db.query_weight(conn, user, from_dt, to_dt, device=device)
         rpt.print_weight_stats(readings, height_cm=config.get_height_cm())
 
 
@@ -363,8 +387,9 @@ def delete_weight(id: int, yes: bool):
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
 @click.option("--output", "-o", default=None, help="Output CSV file (default: stdout)")
 @click.option("--user", "-u", default=None, help="User name (default: current user)")
+@click.option("--device", default=None, help="Filter by device name")
 def export(days: int | None, from_date: datetime | None, to_date: datetime | None,
-           metric: str, output: str | None, user: str | None):
+           metric: str, output: str | None, user: str | None, device: str | None):
     """Export readings to CSV."""
     import csv
     import io
@@ -377,16 +402,16 @@ def export(days: int | None, from_date: datetime | None, to_date: datetime | Non
     writer = csv.writer(buf)
 
     if metric in ("bp", "all"):
-        writer.writerow(["type", "id", "timestamp", "systolic", "diastolic", "pulse", "category", "note"])
-        for r in db.query_bp(conn, user, from_dt, to_dt):
+        writer.writerow(["type", "id", "timestamp", "systolic", "diastolic", "pulse", "category", "device", "note"])
+        for r in db.query_bp(conn, user, from_dt, to_dt, device=device):
             writer.writerow(["bp", r.id, r.timestamp.isoformat(),
-                             r.systolic, r.diastolic, r.pulse or "", r.category, r.note or ""])
+                             r.systolic, r.diastolic, r.pulse or "", r.category, r.device or "", r.note or ""])
 
     if metric in ("weight", "all"):
-        writer.writerow(["type", "id", "timestamp", "value_kg", "unit", "note"])
-        for r in db.query_weight(conn, user, from_dt, to_dt):
+        writer.writerow(["type", "id", "timestamp", "value_kg", "unit", "device", "note"])
+        for r in db.query_weight(conn, user, from_dt, to_dt, device=device):
             writer.writerow(["weight", r.id, r.timestamp.isoformat(),
-                             r.value_kg, r.unit, r.note or ""])
+                             r.value_kg, r.unit, r.device or "", r.note or ""])
 
     content = buf.getvalue()
 

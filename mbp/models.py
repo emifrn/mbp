@@ -9,6 +9,7 @@ class BPReading:
     pulse: int | None
     note: str | None
     username: str
+    device: str | None = None
     timestamp: datetime = field(default_factory=datetime.now)
     id: int | None = None
 
@@ -42,6 +43,7 @@ class WeightReading:
     unit: str             # preferred display unit: "kg" or "lbs"
     note: str | None
     username: str
+    device: str | None = None
     timestamp: datetime = field(default_factory=datetime.now)
     id: int | None = None
 

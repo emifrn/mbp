@@ -26,6 +26,32 @@ def save_config(cfg: dict) -> None:
     path.write_text(json.dumps(cfg, indent=2))
 
 
+def get_bp_device() -> str | None:
+    return load_config().get("bp_device")
+
+
+def set_bp_device(device: str) -> None:
+    device = device.strip()
+    if not device:
+        raise ValueError("Device name cannot be empty.")
+    cfg = load_config()
+    cfg["bp_device"] = device
+    save_config(cfg)
+
+
+def get_weight_device() -> str | None:
+    return load_config().get("weight_device")
+
+
+def set_weight_device(device: str) -> None:
+    device = device.strip()
+    if not device:
+        raise ValueError("Device name cannot be empty.")
+    cfg = load_config()
+    cfg["weight_device"] = device
+    save_config(cfg)
+
+
 def get_name() -> str | None:
     return load_config().get("name")
 

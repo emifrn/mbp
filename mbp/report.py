@@ -34,6 +34,7 @@ def print_bp_table(readings: list[BPReading]) -> None:
     table.add_column("Category", min_width=14)
     if show_avg:
         table.add_column("7d Avg", justify="right", style="dim")
+    table.add_column("Device", style="dim")
     table.add_column("Note")
 
     for i, r in enumerate(readings):
@@ -49,6 +50,7 @@ def print_bp_table(readings: list[BPReading]) -> None:
         if show_avg:
             avg_s, avg_d = _bp_rolling_avg(readings, i)
             row.append(f"{avg_s}/{avg_d}")
+        row.append(r.device or "")
         row.append(r.note or "")
         table.add_row(*row)
 
@@ -71,6 +73,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
     if height_cm is not None:
         table.add_column("BMI", justify="right")
         table.add_column("Category")
+    table.add_column("Device", style="dim")
     table.add_column("Note")
 
     for r in readings:
@@ -88,6 +91,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
                 weight_str,
                 f"[{color}]{bmi_val}[/{color}]",
                 f"[{color}]{cat}[/{color}]",
+                r.device or "",
                 r.note or "",
             )
         else:
@@ -95,6 +99,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
                 str(r.id),
                 r.timestamp.strftime("%Y-%m-%d %H:%M"),
                 weight_str,
+                r.device or "",
                 r.note or "",
             )
 
