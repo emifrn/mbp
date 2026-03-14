@@ -24,6 +24,16 @@ def save_config(cfg: dict) -> None:
     path.write_text(json.dumps(cfg, indent=2))
 
 
+def get_name() -> str | None:
+    return load_config().get("name")
+
+
+def set_name(name: str) -> None:
+    cfg = load_config()
+    cfg["name"] = name
+    save_config(cfg)
+
+
 def get_weight_unit() -> str:
     return load_config().get("weight_unit", "kg")
 

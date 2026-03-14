@@ -15,7 +15,7 @@ console = Console()
 
 
 def _current_user() -> str:
-    return getpass.getuser()
+    return config.get_name() or getpass.getuser()
 
 
 def _parse_date(ctx, param, value: str | None) -> datetime | None:
@@ -118,6 +118,7 @@ def log_weight(value: float, note: str | None):
 # ── bp config ──────────────────────────────────────────────────────────────────
 
 @cli.command(name="config")
+@click.option("--name", default=None, help="Your name (used to identify readings)")
 @click.option(
     "--weight-unit",
     type=click.Choice(["kg", "lbs"], case_sensitive=False),
@@ -134,9 +135,13 @@ def log_weight(value: float, note: str | None):
     default=None,
     help="Your height (in the current height unit)",
 )
-def config_cmd(weight_unit: str | None, height_unit: str | None, height: float | None):
+def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | None, height: float | None):
     """View or update user configuration."""
     changed = False
+    if name:
+        config.set_name(name)
+        console.print(f"[green]Name set to:[/green] {name}")
+        changed = True
     if weight_unit:
         config.set_weight_unit(weight_unit.lower())
         console.print(f"[green]Weight unit set to:[/green] {weight_unit.lower()}")
@@ -152,6 +157,8 @@ def config_cmd(weight_unit: str | None, height_unit: str | None, height: float |
         changed = True
     if not changed:
         cfg = config.load_config()
+        name_val = cfg.get("name") or f"{getpass.getuser()} [dim](system user, set with --name)[/dim]"
+        console.print(f"Name:        [cyan]{name_val}[/cyan]")
         unit = cfg.get("weight_unit", "kg (default)")
         console.print(f"Weight unit: [cyan]{unit}[/cyan]")
         height_cm = cfg.get("height_cm")

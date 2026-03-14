@@ -140,6 +140,17 @@ class TestConfigCommand:
         assert result.exit_code == 0
         assert "not set" in result.output
 
+    def test_set_name(self, runner):
+        result = runner.invoke(cli, ["config", "--name", "Alice"])
+        assert result.exit_code == 0
+        assert "Alice" in result.output
+
+    def test_view_config_shows_name(self, runner):
+        runner.invoke(cli, ["config", "--name", "Alice"])
+        result = runner.invoke(cli, ["config"])
+        assert result.exit_code == 0
+        assert "Alice" in result.output
+
 
 class TestPlotBMI:
     def test_plot_bmi_no_height(self, runner):

@@ -127,6 +127,7 @@ mbp plot bp --from 2026-01-01
 ## Configuration
 
 ```bash
+mbp config --name "John"        # set your display name (defaults to system user)
 mbp config --weight-unit kg     # or lbs
 mbp config --height-unit cm     # or in (inches)
 mbp config --height 175         # your height in the configured unit
@@ -180,7 +181,7 @@ my-blood-pressure/
 │   ├── validate.py     # input validation & auto-correction
 │   ├── plot.py         # plotext (terminal) + matplotlib (PNG)
 │   ├── report.py       # rich table formatting
-│   └── config.py       # per-user config (weight unit, height unit, height)
+│   └── config.py       # per-user config (name, weight unit, height unit, height)
 ├── tests/
 │   ├── test_validate.py
 │   ├── test_db.py
