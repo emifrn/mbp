@@ -76,14 +76,14 @@ def log():
 @log.command(name="bp")
 @click.argument("systolic", type=int)
 @click.argument("diastolic", type=int)
-@click.option("--pulse", "-p", type=int, default=None, help="Heart rate (bpm)")
+@click.argument("pulse", type=int, required=False, default=None)
 @click.option("--note", "-n", default=None, help="Optional note")
 @click.option("--device", default=None, help="Device or location name (e.g. 'home', 'pharmacy')")
 @click.option("--date", "-d", default=None, callback=_parse_date, is_eager=False,
               help="Timestamp (YYYY-MM-DD or YYYY-MM-DD HH:MM), defaults to now")
-def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None,
-           device: str | None, date: datetime | None):
-    """Log a blood pressure reading (SYSTOLIC DIASTOLIC)."""
+def log_bp(systolic: int, diastolic: int, pulse: int | None,
+           note: str | None, device: str | None, date: datetime | None):
+    """Log a blood pressure reading (SYSTOLIC DIASTOLIC [PULSE])."""
     try:
         result = validate.validate_bp(systolic, diastolic, pulse)
     except ValueError as e:

@@ -8,7 +8,7 @@ Data lives in a local SQLite database. No cloud, no accounts.
 ```bash
 pip install -e .
 mbp config --name "Alice" --weight-unit kg --height-unit cm --height 170
-mbp log bp 120 80 --pulse 65
+mbp log bp 120 80 65
 mbp report
 ```
 
@@ -58,11 +58,11 @@ pip install -e .
 
 ```bash
 mbp log bp 120 80
-mbp log bp 120 80 --pulse 65
-mbp log bp 120 80 --pulse 65 --note "after rest"
-mbp log bp 120 80 --device "Omron M3"        # override default device
-mbp log bp 120 80 --date "2026-03-10"         # backfill a past reading
-mbp log bp 120 80 --date "2026-03-10 08:30"
+mbp log bp 120 80 65
+mbp log bp 120 80 65 --note "after rest"
+mbp log bp 120 80 65 --device "Omron M3"     # override default device
+mbp log bp 120 80 65 --date "2026-03-10"     # backfill a past reading
+mbp log bp 120 80 65 --date "2026-03-10 08:30"
 ```
 
 ### Log weight
