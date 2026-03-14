@@ -402,16 +402,16 @@ def export(days: int | None, from_date: datetime | None, to_date: datetime | Non
     writer = csv.writer(buf)
 
     if metric in ("bp", "all"):
-        writer.writerow(["type", "id", "timestamp", "systolic", "diastolic", "pulse", "category", "device", "note"])
+        writer.writerow(["type", "id", "timestamp", "username", "systolic", "diastolic", "pulse", "category", "device", "note"])
         for r in db.query_bp(conn, user, from_dt, to_dt, device=device):
             writer.writerow(["bp", r.id, r.timestamp.isoformat(),
-                             r.systolic, r.diastolic, r.pulse or "", r.category, r.device or "", r.note or ""])
+                             r.username, r.systolic, r.diastolic, r.pulse or "", r.category, r.device or "", r.note or ""])
 
     if metric in ("weight", "all"):
-        writer.writerow(["type", "id", "timestamp", "value_kg", "unit", "device", "note"])
+        writer.writerow(["type", "id", "timestamp", "username", "value_kg", "unit", "device", "note"])
         for r in db.query_weight(conn, user, from_dt, to_dt, device=device):
             writer.writerow(["weight", r.id, r.timestamp.isoformat(),
-                             r.value_kg, r.unit, r.device or "", r.note or ""])
+                             r.username, r.value_kg, r.unit, r.device or "", r.note or ""])
 
     content = buf.getvalue()
 
