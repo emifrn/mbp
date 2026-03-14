@@ -1,0 +1,8 @@
+click>=8.1
+rich>=13.0
+plotext>=5.2
+matplotlib>=3.8
+
+[dev]
+pytest>=8.0
+pytest-cov

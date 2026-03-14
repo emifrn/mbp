@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: bp
+Version: 0.1.0
+Summary: Blood pressure and weight tracker CLI
+Requires-Python: >=3.11
+Requires-Dist: click>=8.1
+Requires-Dist: rich>=13.0
+Requires-Dist: plotext>=5.2
+Requires-Dist: matplotlib>=3.8
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
