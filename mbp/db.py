@@ -5,11 +5,11 @@ from pathlib import Path
 
 from mbp.models import BPReading, WeightReading
 
-_DEFAULT_DB = Path.home() / ".local" / "share" / "bp" / "bp.db"
+_DEFAULT_DB = Path.home() / ".local" / "share" / "mbp" / "mbp.db"
 
 
 def get_db_path() -> Path:
-    env = os.environ.get("BP_DB")
+    env = os.environ.get("MBP_DB")
     return Path(env) if env else _DEFAULT_DB
 
 

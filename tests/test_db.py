@@ -12,7 +12,7 @@ from mbp.models import BPReading, WeightReading
 @pytest.fixture(autouse=True)
 def tmp_db(tmp_path, monkeypatch):
     """Point every test to a fresh temporary database."""
-    monkeypatch.setenv("BP_DB", str(tmp_path / "test.db"))
+    monkeypatch.setenv("MBP_DB", str(tmp_path / "test.db"))
     # Re-import db so get_db_path() picks up the new env var
     import importlib
     import mbp.db
