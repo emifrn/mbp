@@ -139,6 +139,20 @@ def _row_to_weight(row: sqlite3.Row) -> WeightReading:
     )
 
 
+# ── Delete ────────────────────────────────────────────────────────────────────
+
+def delete_bp(conn: sqlite3.Connection, reading_id: int) -> bool:
+    cur = conn.execute("DELETE FROM bp_readings WHERE id = ?", (reading_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def delete_weight(conn: sqlite3.Connection, reading_id: int) -> bool:
+    cur = conn.execute("DELETE FROM weight_readings WHERE id = ?", (reading_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def days_range(days: int) -> tuple[datetime, datetime]:

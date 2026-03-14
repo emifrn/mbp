@@ -152,6 +152,77 @@ class TestConfigCommand:
         assert "Alice" in result.output
 
 
+class TestLogDate:
+    def test_log_bp_with_date(self, runner):
+        result = runner.invoke(cli, ["log", "bp", "120", "80", "--date", "2026-01-15"])
+        assert result.exit_code == 0
+        assert "120/80" in result.output
+
+    def test_log_bp_with_datetime(self, runner):
+        result = runner.invoke(cli, ["log", "bp", "120", "80", "--date", "2026-01-15 08:30"])
+        assert result.exit_code == 0
+
+    def test_log_weight_with_date(self, runner):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        result = runner.invoke(cli, ["log", "weight", "75.0", "--date", "2026-01-15"])
+        assert result.exit_code == 0
+        assert "75.0 kg" in result.output
+
+    def test_log_bp_invalid_date(self, runner):
+        result = runner.invoke(cli, ["log", "bp", "120", "80", "--date", "not-a-date"])
+        assert result.exit_code != 0
+
+
+class TestDeleteCommand:
+    def test_delete_bp(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert "1" in result.output  # ID shown in table
+        result = runner.invoke(cli, ["delete", "bp", "1"])
+        assert result.exit_code == 0
+        assert "Deleted" in result.output
+
+    def test_delete_bp_not_found(self, runner):
+        result = runner.invoke(cli, ["delete", "bp", "999"])
+        assert result.exit_code == 1
+
+    def test_delete_weight(self, runner):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        runner.invoke(cli, ["log", "weight", "75.0"])
+        result = runner.invoke(cli, ["delete", "weight", "1"])
+        assert result.exit_code == 0
+        assert "Deleted" in result.output
+
+    def test_delete_weight_not_found(self, runner):
+        result = runner.invoke(cli, ["delete", "weight", "999"])
+        assert result.exit_code == 1
+
+
+class TestExportCommand:
+    def test_export_bp(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["export", "--type", "bp"])
+        assert result.exit_code == 0
+        assert "systolic" in result.output
+        assert "120" in result.output
+
+    def test_export_weight(self, runner):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        runner.invoke(cli, ["log", "weight", "75.0"])
+        result = runner.invoke(cli, ["export", "--type", "weight"])
+        assert result.exit_code == 0
+        assert "value_kg" in result.output
+        assert "75.0" in result.output
+
+    def test_export_to_file(self, runner, tmp_path):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        out = str(tmp_path / "out.csv")
+        result = runner.invoke(cli, ["export", "--type", "bp", "--output", out])
+        assert result.exit_code == 0
+        assert "Exported" in result.output
+        assert "120" in open(out).read()
+
+
 class TestPlotBMI:
     def test_plot_bmi_no_height(self, runner):
         result = runner.invoke(cli, ["plot", "bmi"])

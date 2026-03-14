@@ -21,10 +21,12 @@ def _current_user() -> str:
 def _parse_date(ctx, param, value: str | None) -> datetime | None:
     if value is None:
         return None
-    try:
-        return datetime.strptime(value, "%Y-%m-%d")
-    except ValueError:
-        raise click.BadParameter("Expected format: YYYY-MM-DD")
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    raise click.BadParameter("Expected format: YYYY-MM-DD or YYYY-MM-DD HH:MM")
 
 
 def _date_range(
@@ -58,7 +60,9 @@ def log():
 @click.argument("diastolic", type=int)
 @click.option("--pulse", "-p", type=int, default=None, help="Heart rate (bpm)")
 @click.option("--note", "-n", default=None, help="Optional note")
-def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None):
+@click.option("--date", "-d", default=None, callback=_parse_date, is_eager=False,
+              help="Timestamp (YYYY-MM-DD or YYYY-MM-DD HH:MM), defaults to now")
+def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None, date: datetime | None):
     """Log a blood pressure reading (SYSTOLIC DIASTOLIC)."""
     try:
         result = validate.validate_bp(systolic, diastolic, pulse)
@@ -75,6 +79,7 @@ def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None):
         pulse=result.pulse,
         note=note,
         username=_current_user(),
+        timestamp=date or datetime.now(),
     )
 
     conn = db.connect()
@@ -94,7 +99,9 @@ def log_bp(systolic: int, diastolic: int, pulse: int | None, note: str | None):
 @log.command(name="weight")
 @click.argument("value", type=float)
 @click.option("--note", "-n", default=None, help="Optional note")
-def log_weight(value: float, note: str | None):
+@click.option("--date", "-d", default=None, callback=_parse_date, is_eager=False,
+              help="Timestamp (YYYY-MM-DD or YYYY-MM-DD HH:MM), defaults to now")
+def log_weight(value: float, note: str | None, date: datetime | None):
     """Log a weight reading."""
     unit = config.get_weight_unit()
     try:
@@ -108,6 +115,7 @@ def log_weight(value: float, note: str | None):
         unit=unit,
         note=note,
         username=_current_user(),
+        timestamp=date or datetime.now(),
     )
 
     conn = db.connect()
@@ -283,3 +291,76 @@ def plot(
             plt_mod.plot_bmi_png(readings, height_cm, out)
         else:
             plt_mod.plot_bmi_terminal(readings, height_cm)
+
+
+# ── delete ─────────────────────────────────────────────────────────────────────
+
+@cli.group()
+def delete():
+    """Delete a reading by ID."""
+
+
+@delete.command(name="bp")
+@click.argument("id", type=int)
+def delete_bp(id: int):
+    """Delete a blood pressure reading by ID."""
+    conn = db.connect()
+    if db.delete_bp(conn, id):
+        console.print(f"[green]Deleted[/green] BP reading {id}.")
+    else:
+        console.print(f"[red]No BP reading found with ID {id}.[/red]")
+        sys.exit(1)
+
+
+@delete.command(name="weight")
+@click.argument("id", type=int)
+def delete_weight(id: int):
+    """Delete a weight reading by ID."""
+    conn = db.connect()
+    if db.delete_weight(conn, id):
+        console.print(f"[green]Deleted[/green] weight reading {id}.")
+    else:
+        console.print(f"[red]No weight reading found with ID {id}.[/red]")
+        sys.exit(1)
+
+
+# ── export ─────────────────────────────────────────────────────────────────────
+
+@cli.command()
+@click.option("--days", "-d", type=int, default=None, help="Export last N days")
+@click.option("--from", "from_date", default=None, callback=_parse_date, help="Start date YYYY-MM-DD")
+@click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
+@click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
+@click.option("--output", "-o", default=None, help="Output CSV file (default: stdout)")
+def export(days: int | None, from_date: datetime | None, to_date: datetime | None,
+           metric: str, output: str | None):
+    """Export readings to CSV."""
+    import csv
+    import io
+
+    from_dt, to_dt = _date_range(days, from_date, to_date)
+    user = _current_user()
+    conn = db.connect()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    if metric in ("bp", "all"):
+        writer.writerow(["type", "id", "timestamp", "systolic", "diastolic", "pulse", "category", "note"])
+        for r in db.query_bp(conn, user, from_dt, to_dt):
+            writer.writerow(["bp", r.id, r.timestamp.isoformat(),
+                             r.systolic, r.diastolic, r.pulse or "", r.category, r.note or ""])
+
+    if metric in ("weight", "all"):
+        writer.writerow(["type", "id", "timestamp", "value_kg", "unit", "note"])
+        for r in db.query_weight(conn, user, from_dt, to_dt):
+            writer.writerow(["weight", r.id, r.timestamp.isoformat(),
+                             r.value_kg, r.unit, r.note or ""])
+
+    content = buf.getvalue()
+
+    if output:
+        Path(output).write_text(content)
+        console.print(f"[green]Exported to[/green] {output}")
+    else:
+        click.echo(content, nl=False)

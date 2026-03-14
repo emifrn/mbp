@@ -15,6 +15,7 @@ def print_bp_table(readings: list[BPReading]) -> None:
         return
 
     table = Table(box=box.ROUNDED, show_lines=False, header_style="bold cyan")
+    table.add_column("ID", style="dim", justify="right")
     table.add_column("Date", style="dim", min_width=16)
     table.add_column("Systolic", justify="right")
     table.add_column("Diastolic", justify="right")
@@ -25,6 +26,7 @@ def print_bp_table(readings: list[BPReading]) -> None:
     for r in readings:
         color = r.category_color
         table.add_row(
+            str(r.id),
             r.timestamp.strftime("%Y-%m-%d %H:%M"),
             f"[{color}]{r.systolic}[/{color}]",
             f"[{color}]{r.diastolic}[/{color}]",
@@ -46,6 +48,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
     display_unit = readings[-1].unit
 
     table = Table(box=box.ROUNDED, show_lines=False, header_style="bold cyan")
+    table.add_column("ID", style="dim", justify="right")
     table.add_column("Date", style="dim", min_width=16)
     table.add_column(f"Weight ({display_unit})", justify="right")
     if height_cm is not None:
@@ -63,6 +66,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
             color = r.bmi_color(height_cm)
             cat = r.bmi_category(height_cm)
             table.add_row(
+                str(r.id),
                 r.timestamp.strftime("%Y-%m-%d %H:%M"),
                 weight_str,
                 f"[{color}]{bmi_val}[/{color}]",
@@ -71,6 +75,7 @@ def print_weight_table(readings: list[WeightReading], height_cm: float | None = 
             )
         else:
             table.add_row(
+                str(r.id),
                 r.timestamp.strftime("%Y-%m-%d %H:%M"),
                 weight_str,
                 r.note or "",
