@@ -232,6 +232,40 @@ class TestExportCommand:
         assert "120" in open(out).read()
 
 
+class TestVersion:
+    def test_version_flag(self, runner):
+        result = runner.invoke(cli, ["--version"])
+        assert result.exit_code == 0
+        assert "mbp" in result.output
+
+
+
+class TestConfigValidation:
+    def test_height_too_low(self, runner):
+        result = runner.invoke(cli, ["config", "--height-unit", "cm", "--height", "10"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+    def test_height_too_high(self, runner):
+        result = runner.invoke(cli, ["config", "--height-unit", "cm", "--height", "400"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+    def test_height_valid(self, runner):
+        result = runner.invoke(cli, ["config", "--height-unit", "cm", "--height", "175"])
+        assert result.exit_code == 0
+
+    def test_height_in_too_low(self, runner):
+        result = runner.invoke(cli, ["config", "--height-unit", "in", "--height", "5"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+    def test_empty_name(self, runner):
+        result = runner.invoke(cli, ["config", "--name", "   "])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+
+
 class TestUserOption:
     def test_report_other_user_empty(self, runner):
         runner.invoke(cli, ["log", "bp", "120", "80"])

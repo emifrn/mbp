@@ -5,6 +5,8 @@ from mbp.db import get_db_path
 
 _VALID_UNITS = ("kg", "lbs")
 _VALID_HEIGHT_UNITS = ("cm", "in")
+_HEIGHT_RANGE_CM = (50.0, 300.0)
+_HEIGHT_RANGE_IN = (20.0, 120.0)
 
 
 def _config_path() -> Path:
@@ -29,6 +31,9 @@ def get_name() -> str | None:
 
 
 def set_name(name: str) -> None:
+    name = name.strip()
+    if not name:
+        raise ValueError("Name cannot be empty.")
     cfg = load_config()
     cfg["name"] = name
     save_config(cfg)
@@ -59,15 +64,19 @@ def set_height_unit(unit: str) -> None:
 
 
 def get_height_cm() -> float | None:
-    """Return stored height in cm, or None if not set."""
     return load_config().get("height_cm")
 
 
 def set_height(value: float, unit: str) -> None:
-    """Store height internally in cm. unit is 'cm' or 'in'."""
     if unit == "in":
+        lo, hi = _HEIGHT_RANGE_IN
+        if not (lo <= value <= hi):
+            raise ValueError(f"Height must be between {lo} and {hi} inches.")
         height_cm = value * 2.54
     elif unit == "cm":
+        lo, hi = _HEIGHT_RANGE_CM
+        if not (lo <= value <= hi):
+            raise ValueError(f"Height must be between {lo} and {hi} cm.")
         height_cm = value
     else:
         raise ValueError(f"Invalid height unit '{unit}'. Choose from: cm, in")

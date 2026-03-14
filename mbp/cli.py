@@ -59,6 +59,7 @@ def _date_range(
 # ── Root group ─────────────────────────────────────────────────────────────────
 
 @click.group(cls=RichGroup)
+@click.version_option(package_name="my-blood-pressure", prog_name="mbp")
 def cli():
     """Blood pressure and weight tracker."""
 
@@ -161,25 +162,30 @@ def log_weight(value: float, note: str | None, date: datetime | None):
     help="Your height (in the current height unit)",
 )
 def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | None, height: float | None):
-    """View or update user configuration."""
+    """View or update configuration."""
     changed = False
-    if name:
-        config.set_name(name)
-        console.print(f"[green]Name set to:[/green] {name}")
-        changed = True
-    if weight_unit:
-        config.set_weight_unit(weight_unit.lower())
-        console.print(f"[green]Weight unit set to:[/green] {weight_unit.lower()}")
-        changed = True
-    if height_unit:
-        config.set_height_unit(height_unit.lower())
-        console.print(f"[green]Height unit set to:[/green] {height_unit.lower()}")
-        changed = True
-    if height is not None:
-        unit = height_unit.lower() if height_unit else config.get_height_unit()
-        config.set_height(height, unit)
-        console.print(f"[green]Height set to:[/green] {height} {unit}")
-        changed = True
+    try:
+        if name:
+            config.set_name(name)
+            console.print(f"[green]Name set to:[/green] {name}")
+            changed = True
+        if weight_unit:
+            config.set_weight_unit(weight_unit.lower())
+            console.print(f"[green]Weight unit set to:[/green] {weight_unit.lower()}")
+            changed = True
+        if height_unit:
+            config.set_height_unit(height_unit.lower())
+            console.print(f"[green]Height unit set to:[/green] {height_unit.lower()}")
+            changed = True
+        if height is not None:
+            unit = height_unit.lower() if height_unit else config.get_height_unit()
+            config.set_height(height, unit)
+            console.print(f"[green]Height set to:[/green] {height} {unit}")
+            changed = True
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        sys.exit(1)
+
     if not changed:
         cfg = config.load_config()
         name_val = cfg.get("name") or f"{getpass.getuser()} [dim](system user, set with --name)[/dim]"
@@ -189,10 +195,7 @@ def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | Non
         height_cm = cfg.get("height_cm")
         if height_cm is not None:
             h_unit = cfg.get("height_unit", "cm")
-            if h_unit == "in":
-                display_h = round(height_cm / 2.54, 1)
-            else:
-                display_h = round(height_cm, 1)
+            display_h = round(height_cm / 2.54, 1) if h_unit == "in" else round(height_cm, 1)
             console.print(f"Height:      [cyan]{display_h} {h_unit}[/cyan]")
         else:
             console.print("Height:      [dim]not set[/dim]")
