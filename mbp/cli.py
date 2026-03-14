@@ -14,6 +14,23 @@ from mbp import plot as plt_mod
 console = Console()
 
 
+class RichGroup(click.Group):
+    """Click Group that formats errors with Rich."""
+    def main(self, *args, standalone_mode=True, **kwargs):
+        try:
+            return super().main(*args, standalone_mode=False, **kwargs)
+        except click.UsageError as e:
+            console.print(f"[red]Error:[/red] {e.format_message()}")
+            if e.ctx:
+                console.print(f"[dim]Try [bold]{e.ctx.command_path} --help[/bold] for usage.[/dim]")
+            sys.exit(2)
+        except click.exceptions.Exit as e:
+            sys.exit(e.code)
+        except click.exceptions.Abort:
+            console.print("\n[yellow]Aborted.[/yellow]")
+            sys.exit(1)
+
+
 def _current_user() -> str:
     return config.get_name() or getpass.getuser()
 
@@ -41,14 +58,14 @@ def _date_range(
 
 # ── Root group ─────────────────────────────────────────────────────────────────
 
-@click.group()
+@click.group(cls=RichGroup)
 def cli():
     """Blood pressure and weight tracker."""
 
 
 # ── log group ──────────────────────────────────────────────────────────────────
 
-@cli.group()
+@cli.group(cls=RichGroup)
 def log():
     """Log a new reading."""
 
@@ -185,14 +202,15 @@ def config_cmd(name: str | None, weight_unit: str | None, height_unit: str | Non
 # ── bp report ─────────────────────────────────────────────────────────────────
 
 @cli.command()
-@click.option("--days", "-d", type=int, default=30, help="Show last N days (default: 30)")
+@click.option("--days", "-d", type=int, default=None, help="Show last N days (default: all)")
 @click.option("--from", "from_date", default=None, callback=_parse_date, help="Start date YYYY-MM-DD")
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
-def report(days: int, from_date: datetime | None, to_date: datetime | None, metric: str):
-    """Show recent readings in a table."""
+@click.option("--user", "-u", default=None, help="User name (default: current user)")
+def report(days: int | None, from_date: datetime | None, to_date: datetime | None, metric: str, user: str | None):
+    """Show readings in a table."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = _current_user()
+    user = user or _current_user()
     conn = db.connect()
 
     if metric in ("bp", "all"):
@@ -209,14 +227,15 @@ def report(days: int, from_date: datetime | None, to_date: datetime | None, metr
 # ── bp stats ──────────────────────────────────────────────────────────────────
 
 @cli.command()
-@click.option("--days", "-d", type=int, default=30, help="Show last N days (default: 30)")
+@click.option("--days", "-d", type=int, default=None, help="Show last N days (default: all)")
 @click.option("--from", "from_date", default=None, callback=_parse_date, help="Start date YYYY-MM-DD")
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
-def stats(days: int, from_date: datetime | None, to_date: datetime | None, metric: str):
+@click.option("--user", "-u", default=None, help="User name (default: current user)")
+def stats(days: int | None, from_date: datetime | None, to_date: datetime | None, metric: str, user: str | None):
     """Show summary statistics and trends."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = _current_user()
+    user = user or _current_user()
     conn = db.connect()
 
     if metric in ("bp", "all"):
@@ -239,6 +258,7 @@ def stats(days: int, from_date: datetime | None, to_date: datetime | None, metri
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--png",  is_flag=True, default=False, help="Export to PNG instead of terminal plot")
 @click.option("--output", "-o", default=None, help="Output file path for PNG (optional)")
+@click.option("--user", "-u", default=None, help="User name (default: current user)")
 def plot(
     metric: str,
     days: int,
@@ -246,10 +266,11 @@ def plot(
     to_date: datetime | None,
     png: bool,
     output: str | None,
+    user: str | None,
 ):
     """Plot readings in the terminal or export to PNG."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = _current_user()
+    user = user or _current_user()
     conn = db.connect()
 
     if metric == "bp":
@@ -295,15 +316,18 @@ def plot(
 
 # ── delete ─────────────────────────────────────────────────────────────────────
 
-@cli.group()
+@cli.group(cls=RichGroup)
 def delete():
     """Delete a reading by ID."""
 
 
 @delete.command(name="bp")
 @click.argument("id", type=int)
-def delete_bp(id: int):
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
+def delete_bp(id: int, yes: bool):
     """Delete a blood pressure reading by ID."""
+    if not yes:
+        click.confirm(f"Delete BP reading {id}?", abort=True)
     conn = db.connect()
     if db.delete_bp(conn, id):
         console.print(f"[green]Deleted[/green] BP reading {id}.")
@@ -314,8 +338,11 @@ def delete_bp(id: int):
 
 @delete.command(name="weight")
 @click.argument("id", type=int)
-def delete_weight(id: int):
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
+def delete_weight(id: int, yes: bool):
     """Delete a weight reading by ID."""
+    if not yes:
+        click.confirm(f"Delete weight reading {id}?", abort=True)
     conn = db.connect()
     if db.delete_weight(conn, id):
         console.print(f"[green]Deleted[/green] weight reading {id}.")
@@ -332,14 +359,15 @@ def delete_weight(id: int):
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
 @click.option("--output", "-o", default=None, help="Output CSV file (default: stdout)")
+@click.option("--user", "-u", default=None, help="User name (default: current user)")
 def export(days: int | None, from_date: datetime | None, to_date: datetime | None,
-           metric: str, output: str | None):
+           metric: str, output: str | None, user: str | None):
     """Export readings to CSV."""
     import csv
     import io
 
     from_dt, to_dt = _date_range(days, from_date, to_date)
-    user = _current_user()
+    user = user or _current_user()
     conn = db.connect()
 
     buf = io.StringIO()

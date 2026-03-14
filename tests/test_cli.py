@@ -176,25 +176,34 @@ class TestLogDate:
 class TestDeleteCommand:
     def test_delete_bp(self, runner):
         runner.invoke(cli, ["log", "bp", "120", "80"])
-        result = runner.invoke(cli, ["report", "--type", "bp"])
-        assert "1" in result.output  # ID shown in table
-        result = runner.invoke(cli, ["delete", "bp", "1"])
+        result = runner.invoke(cli, ["delete", "bp", "1", "--yes"])
         assert result.exit_code == 0
         assert "Deleted" in result.output
 
     def test_delete_bp_not_found(self, runner):
-        result = runner.invoke(cli, ["delete", "bp", "999"])
+        result = runner.invoke(cli, ["delete", "bp", "999", "--yes"])
         assert result.exit_code == 1
+
+    def test_delete_bp_confirms(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["delete", "bp", "1"], input="y\n")
+        assert result.exit_code == 0
+        assert "Deleted" in result.output
+
+    def test_delete_bp_aborts(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["delete", "bp", "1"], input="n\n")
+        assert result.exit_code != 0
 
     def test_delete_weight(self, runner):
         runner.invoke(cli, ["config", "--weight-unit", "kg"])
         runner.invoke(cli, ["log", "weight", "75.0"])
-        result = runner.invoke(cli, ["delete", "weight", "1"])
+        result = runner.invoke(cli, ["delete", "weight", "1", "--yes"])
         assert result.exit_code == 0
         assert "Deleted" in result.output
 
     def test_delete_weight_not_found(self, runner):
-        result = runner.invoke(cli, ["delete", "weight", "999"])
+        result = runner.invoke(cli, ["delete", "weight", "999", "--yes"])
         assert result.exit_code == 1
 
 
@@ -221,6 +230,35 @@ class TestExportCommand:
         assert result.exit_code == 0
         assert "Exported" in result.output
         assert "120" in open(out).read()
+
+
+class TestUserOption:
+    def test_report_other_user_empty(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["report", "--type", "bp", "--user", "otheruser"])
+        assert result.exit_code == 0
+        assert "No" in result.output
+
+    def test_export_other_user_empty(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["export", "--type", "bp", "--user", "otheruser"])
+        assert result.exit_code == 0
+        assert "120" not in result.output
+
+
+class TestRollingAvg:
+    def test_rolling_avg_shown_with_multiple_readings(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        runner.invoke(cli, ["log", "bp", "130", "85"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert result.exit_code == 0
+        assert "125.0/" in result.output  # rolling avg of both readings
+
+    def test_rolling_avg_not_shown_with_single_reading(self, runner):
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        result = runner.invoke(cli, ["report", "--type", "bp"])
+        assert result.exit_code == 0
+        assert "/" not in result.output.split("120")[1].split("\n")[0]  # no avg col next to value
 
 
 class TestPlotBMI:

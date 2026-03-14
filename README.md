@@ -16,6 +16,15 @@ Data lives in a local SQLite database. No cloud, no accounts.
 - Input validation with auto-correction (swapped systolic/diastolic, out-of-range values)
 - Optional notes on any reading
 
+## Quickstart
+
+```bash
+pip install -e .
+mbp config --name "Alice" --weight-unit kg --height-unit cm --height 170
+mbp log bp 120 80 --pulse 65
+mbp report
+```
+
 ## Installation
 
 ```bash

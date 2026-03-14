@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from rich.console import Console
 from rich.table import Table
@@ -9,10 +9,21 @@ from mbp.models import BPReading, WeightReading
 console = Console()
 
 
+def _bp_rolling_avg(readings: list[BPReading], i: int, days: int = 7) -> tuple[float, float]:
+    cutoff = readings[i].timestamp - timedelta(days=days)
+    window = [r for r in readings[:i + 1] if r.timestamp >= cutoff]
+    return (
+        round(sum(r.systolic for r in window) / len(window), 1),
+        round(sum(r.diastolic for r in window) / len(window), 1),
+    )
+
+
 def print_bp_table(readings: list[BPReading]) -> None:
     if not readings:
         console.print("[dim]No blood pressure readings found.[/dim]")
         return
+
+    show_avg = len(readings) >= 2
 
     table = Table(box=box.ROUNDED, show_lines=False, header_style="bold cyan")
     table.add_column("ID", style="dim", justify="right")
@@ -21,19 +32,25 @@ def print_bp_table(readings: list[BPReading]) -> None:
     table.add_column("Diastolic", justify="right")
     table.add_column("Pulse", justify="right")
     table.add_column("Category", min_width=14)
+    if show_avg:
+        table.add_column("7d Avg", justify="right", style="dim")
     table.add_column("Note")
 
-    for r in readings:
+    for i, r in enumerate(readings):
         color = r.category_color
-        table.add_row(
+        row = [
             str(r.id),
             r.timestamp.strftime("%Y-%m-%d %H:%M"),
             f"[{color}]{r.systolic}[/{color}]",
             f"[{color}]{r.diastolic}[/{color}]",
             str(r.pulse) if r.pulse is not None else "—",
             f"[{color}]{r.category}[/{color}]",
-            r.note or "",
-        )
+        ]
+        if show_avg:
+            avg_s, avg_d = _bp_rolling_avg(readings, i)
+            row.append(f"{avg_s}/{avg_d}")
+        row.append(r.note or "")
+        table.add_row(*row)
 
     console.print(table)
     console.print(f"[dim]{len(readings)} reading(s)[/dim]")
