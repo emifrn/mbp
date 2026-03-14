@@ -315,18 +315,6 @@ class TestDeviceOption:
         assert "home" in result.output
 
 
-class TestUserOption:
-    def test_report_other_user_empty(self, runner):
-        runner.invoke(cli, ["log", "bp", "120", "80"])
-        result = runner.invoke(cli, ["report", "--type", "bp", "--user", "otheruser"])
-        assert result.exit_code == 0
-        assert "No" in result.output
-
-    def test_export_other_user_empty(self, runner):
-        runner.invoke(cli, ["log", "bp", "120", "80"])
-        result = runner.invoke(cli, ["export", "--type", "bp", "--user", "otheruser"])
-        assert result.exit_code == 0
-        assert "120" not in result.output
 
 
 class TestImportCommand:

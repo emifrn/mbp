@@ -229,13 +229,12 @@ def config_cmd(name: str | None, bp_device: str | None, weight_device: str | Non
 @click.option("--from", "from_date", default=None, callback=_parse_date, help="Start date YYYY-MM-DD")
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
-@click.option("--user", "-u", default=None, help="User name (default: current user)")
 @click.option("--device", default=None, help="Filter by device name")
 def report(days: int | None, from_date: datetime | None, to_date: datetime | None,
-           metric: str, user: str | None, device: str | None):
+           metric: str, device: str | None):
     """Show readings in a table."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = user or _current_user()
+    user = _current_user()
     conn = db.connect()
 
     if metric in ("bp", "all"):
@@ -256,13 +255,12 @@ def report(days: int | None, from_date: datetime | None, to_date: datetime | Non
 @click.option("--from", "from_date", default=None, callback=_parse_date, help="Start date YYYY-MM-DD")
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
-@click.option("--user", "-u", default=None, help="User name (default: current user)")
 @click.option("--device", default=None, help="Filter by device name")
 def stats(days: int | None, from_date: datetime | None, to_date: datetime | None,
-          metric: str, user: str | None, device: str | None):
+          metric: str, device: str | None):
     """Show summary statistics and trends."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = user or _current_user()
+    user = _current_user()
     conn = db.connect()
 
     if metric in ("bp", "all"):
@@ -285,7 +283,6 @@ def stats(days: int | None, from_date: datetime | None, to_date: datetime | None
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--png",  is_flag=True, default=False, help="Export to PNG instead of terminal plot")
 @click.option("--output", "-o", default=None, help="Output file path for PNG (optional)")
-@click.option("--user", "-u", default=None, help="User name (default: current user)")
 def plot(
     metric: str,
     days: int,
@@ -293,11 +290,10 @@ def plot(
     to_date: datetime | None,
     png: bool,
     output: str | None,
-    user: str | None,
 ):
     """Plot readings in the terminal or export to PNG."""
     from_dt, to_dt = _date_range(days if not from_date else None, from_date, to_date)
-    user = user or _current_user()
+    user = _current_user()
     conn = db.connect()
 
     if metric == "bp":
@@ -386,16 +382,15 @@ def delete_weight(id: int, yes: bool):
 @click.option("--to",   "to_date",   default=None, callback=_parse_date, help="End date YYYY-MM-DD")
 @click.option("--type", "metric", type=click.Choice(["bp", "weight", "all"]), default="all")
 @click.option("--output", "-o", default=None, help="Output CSV file (default: stdout)")
-@click.option("--user", "-u", default=None, help="User name (default: current user)")
 @click.option("--device", default=None, help="Filter by device name")
 def export(days: int | None, from_date: datetime | None, to_date: datetime | None,
-           metric: str, output: str | None, user: str | None, device: str | None):
+           metric: str, output: str | None, device: str | None):
     """Export readings to CSV."""
     import csv
     import io
 
     from_dt, to_dt = _date_range(days, from_date, to_date)
-    user = user or _current_user()
+    user = _current_user()
     conn = db.connect()
 
     buf = io.StringIO()
