@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "bp"
+version = "0.1.0"
+description = "Blood pressure and weight tracker CLI"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "plotext>=5.2",
+    "matplotlib>=3.8",
+]
+
+[project.scripts]
+bp = "bp.cli:cli"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bp*"]
