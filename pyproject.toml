@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bp"
+name = "my-blood-pressure"
 version = "0.1.0"
 description = "Blood pressure and weight tracker CLI"
 requires-python = ">=3.11"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bp = "bp.cli:cli"
+mbp = "mbp.cli:cli"
 
 [project.optional-dependencies]
 dev = [
@@ -25,4 +25,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["bp*"]
+include = ["mbp*"]

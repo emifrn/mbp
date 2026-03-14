@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from bp.db import get_db_path
+from mbp.db import get_db_path
 
 _VALID_UNITS = ("kg", "lbs")
 

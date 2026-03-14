@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
-from bp.models import BPReading, WeightReading
+from mbp.models import BPReading, WeightReading
 
 console = Console()
 

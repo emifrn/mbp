@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from bp.models import BPReading, WeightReading
+from mbp.models import BPReading, WeightReading
 
 # ── Terminal plots (plotext) ───────────────────────────────────────────────────
 

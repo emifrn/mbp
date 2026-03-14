@@ -6,10 +6,10 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from bp import db, validate, config
-from bp.models import BPReading, WeightReading
-from bp import report as rpt
-from bp import plot as plt_mod
+from mbp import db, validate, config
+from mbp.models import BPReading, WeightReading
+from mbp import report as rpt
+from mbp import plot as plt_mod
 
 console = Console()
 

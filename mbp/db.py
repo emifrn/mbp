@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from bp.models import BPReading, WeightReading
+from mbp.models import BPReading, WeightReading
 
 _DEFAULT_DB = Path.home() / ".local" / "share" / "bp" / "bp.db"
 

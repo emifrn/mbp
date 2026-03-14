@@ -2,17 +2,17 @@ import importlib
 import pytest
 from click.testing import CliRunner
 
-from bp.cli import cli
+from mbp.cli import cli
 
 
 @pytest.fixture(autouse=True)
 def tmp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("BP_DB", str(tmp_path / "test.db"))
     # Also force a known username
-    monkeypatch.setattr("bp.cli._current_user", lambda: "testuser")
-    importlib.reload(importlib.import_module("bp.db"))
+    monkeypatch.setattr("mbp.cli._current_user", lambda: "testuser")
+    importlib.reload(importlib.import_module("mbp.db"))
     yield
-    importlib.reload(importlib.import_module("bp.db"))
+    importlib.reload(importlib.import_module("mbp.db"))
 
 
 @pytest.fixture

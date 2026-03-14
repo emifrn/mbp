@@ -1,5 +1,5 @@
 import pytest
-from bp.validate import validate_bp, validate_weight
+from mbp.validate import validate_bp, validate_weight
 
 
 class TestValidateBP:

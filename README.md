@@ -1,4 +1,4 @@
-# bp — Blood Pressure & Weight Tracker
+# mbp — Blood Pressure & Weight Tracker
 
 A minimal CLI to log and visualize blood pressure and weight over time.
 Data lives in a local SQLite database. No cloud, no accounts.
@@ -38,66 +38,66 @@ matplotlib
 
 ```bash
 # Log a reading (systolic diastolic)
-bp log 120 80
+mbp log 120 80
 
 # Log with pulse
-bp log 120 80 --pulse 65
+mbp log 120 80 --pulse 65
 
 # Log with a note
-bp log 120 80 --pulse 65 --note "after coffee"
+mbp log 120 80 --pulse 65 --note "after coffee"
 ```
 
 ### Weight
 
 ```bash
 # First time: set your preferred unit (once per user)
-bp config --weight-unit kg     # or: lbs
+mbp config --weight-unit kg     # or: lbs
 
 # Log weight
-bp weight 74.5
-bp weight 74.5 --note "morning, before breakfast"
+mbp weight 74.5
+mbp weight 74.5 --note "morning, before breakfast"
 ```
 
 ### View readings
 
 ```bash
 # Recent readings (default: last 30 days)
-bp report
+mbp report
 
 # Specify a time range
-bp report --days 90
-bp report --from 2026-01-01 --to 2026-03-01
+mbp report --days 90
+mbp report --from 2026-01-01 --to 2026-03-01
 
 # Blood pressure only or weight only
-bp report --type bp
-bp report --type weight
+mbp report --type bp
+mbp report --type weight
 ```
 
 ### Statistics
 
 ```bash
-bp stats            # summary: mean, min, max, trend for all metrics
-bp stats --type bp
-bp stats --type weight
+mbp stats            # summary: mean, min, max, trend for all metrics
+mbp stats --type bp
+mbp stats --type weight
 ```
 
 ### Plots
 
 ```bash
 # Terminal plots (quick view)
-bp plot bp           # systolic & diastolic over time
-bp plot weight       # weight over time
+mbp plot bp           # systolic & diastolic over time
+mbp plot weight       # weight over time
 
 # Export to PNG (for sharing)
-bp plot bp --png
-bp plot bp --png --output ~/Desktop/bp_march.png
+mbp plot bp --png
+mbp plot bp --png --output ~/Desktop/bp_march.png
 
-bp plot weight --png
-bp plot weight --png --output ~/Desktop/weight_march.png
+mbp plot weight --png
+mbp plot weight --png --output ~/Desktop/weight_march.png
 
 # Time range applies to plots too
-bp plot bp --days 90
-bp plot bp --from 2026-01-01
+mbp plot bp --days 90
+mbp plot bp --from 2026-01-01
 ```
 
 ## Configuration
@@ -105,7 +105,7 @@ bp plot bp --from 2026-01-01
 User config is stored alongside the database. Set once:
 
 ```bash
-bp config --weight-unit kg     # or lbs
+mbp config --weight-unit kg     # or lbs
 ```
 
 ## Database
@@ -132,13 +132,13 @@ export BP_DB=/path/to/my.db
 | High Stage 2 | ≥ 140 | or | ≥ 90 |
 | Crisis | > 180 | or | > 120 |
 
-`bp` will warn you if a reading falls into the Elevated or higher category.
+`mbp` will warn you if a reading falls into the Elevated or higher category.
 
 ## Project Structure
 
 ```
-bp/
-├── bp/
+my-blood-pressure/
+├── mbp/
 │   ├── __init__.py
 │   ├── cli.py          # click commands
 │   ├── db.py           # SQLite schema & queries

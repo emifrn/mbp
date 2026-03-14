@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from bp.models import BPReading, WeightReading
+from mbp.models import BPReading, WeightReading
 
 
 @pytest.fixture(autouse=True)
@@ -15,14 +15,14 @@ def tmp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("BP_DB", str(tmp_path / "test.db"))
     # Re-import db so get_db_path() picks up the new env var
     import importlib
-    import bp.db
-    importlib.reload(bp.db)
+    import mbp.db
+    importlib.reload(mbp.db)
     yield
-    importlib.reload(bp.db)  # restore after test
+    importlib.reload(mbp.db)  # restore after test
 
 
 def _conn():
-    from bp import db
+    from mbp import db
     return db.connect()
 
 
@@ -40,7 +40,7 @@ def _weight(**kwargs):
 
 class TestBPInsertQuery:
     def test_insert_and_retrieve(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         r = _bp()
         row_id = db.insert_bp(conn, r)
@@ -53,7 +53,7 @@ class TestBPInsertQuery:
         assert rows[0].pulse == 65
 
     def test_multiple_users_isolated(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         db.insert_bp(conn, _bp(username="alice"))
         db.insert_bp(conn, _bp(username="bob"))
@@ -64,7 +64,7 @@ class TestBPInsertQuery:
         assert len(bob)   == 1
 
     def test_date_filter(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         now = datetime.now()
         old = _bp(timestamp=now - timedelta(days=60))
@@ -77,7 +77,7 @@ class TestBPInsertQuery:
         assert len(rows) == 1
 
     def test_note_stored(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         db.insert_bp(conn, _bp(note="after exercise"))
         rows = db.query_bp(conn, "testuser")
@@ -86,7 +86,7 @@ class TestBPInsertQuery:
 
 class TestWeightInsertQuery:
     def test_insert_and_retrieve(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         db.insert_weight(conn, _weight())
         rows = db.query_weight(conn, "testuser")
@@ -95,7 +95,7 @@ class TestWeightInsertQuery:
         assert rows[0].unit == "kg"
 
     def test_lbs_stored_as_kg(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         value_kg = 165.0 / 2.20462
         db.insert_weight(conn, _weight(value_kg=value_kg, unit="lbs"))
@@ -104,7 +104,7 @@ class TestWeightInsertQuery:
         assert rows[0].unit == "lbs"
 
     def test_date_filter(self):
-        from bp import db
+        from mbp import db
         conn = _conn()
         now = datetime.now()
         db.insert_weight(conn, _weight(timestamp=now - timedelta(days=90)))
