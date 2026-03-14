@@ -420,3 +420,67 @@ def export(days: int | None, from_date: datetime | None, to_date: datetime | Non
         console.print(f"[green]Exported to[/green] {output}")
     else:
         click.echo(content, nl=False)
+
+
+# ── import ─────────────────────────────────────────────────────────────────────
+
+@cli.command(name="import")
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
+def import_cmd(input_file: str):
+    """Import readings from a CSV file produced by mbp export."""
+    import csv
+
+    conn = db.connect()
+    bp_count = weight_count = error_count = 0
+
+    with open(input_file, newline="") as f:
+        reader = csv.reader(f)
+        for lineno, row in enumerate(reader, start=1):
+            if not row or row[0] == "type":
+                continue  # skip blank lines and header rows
+
+            row_type = row[0]
+
+            try:
+                if row_type == "bp":
+                    # type, id, timestamp, username, systolic, diastolic, pulse, category, device, note
+                    _, _, timestamp, username, systolic, diastolic, pulse, _, device, note = row
+                    reading = BPReading(
+                        systolic=int(systolic),
+                        diastolic=int(diastolic),
+                        pulse=int(pulse) if pulse else None,
+                        device=device or None,
+                        note=note or None,
+                        username=username,
+                        timestamp=datetime.fromisoformat(timestamp),
+                    )
+                    db.insert_bp(conn, reading)
+                    bp_count += 1
+
+                elif row_type == "weight":
+                    # type, id, timestamp, username, value_kg, unit, device, note
+                    _, _, timestamp, username, value_kg, unit, device, note = row
+                    reading = WeightReading(
+                        value_kg=float(value_kg),
+                        unit=unit,
+                        device=device or None,
+                        note=note or None,
+                        username=username,
+                        timestamp=datetime.fromisoformat(timestamp),
+                    )
+                    db.insert_weight(conn, reading)
+                    weight_count += 1
+
+                else:
+                    console.print(f"[yellow]Line {lineno}:[/yellow] unknown type '{row_type}', skipping.")
+                    error_count += 1
+
+            except Exception as e:
+                console.print(f"[yellow]Line {lineno}:[/yellow] skipped — {e}")
+                error_count += 1
+
+    console.print(f"[green]Imported:[/green] {bp_count} BP reading(s), {weight_count} weight reading(s).", end="")
+    if error_count:
+        console.print(f"  [yellow]{error_count} row(s) skipped.[/yellow]")
+    else:
+        console.print("")

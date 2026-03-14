@@ -329,6 +329,44 @@ class TestUserOption:
         assert "120" not in result.output
 
 
+class TestImportCommand:
+    def test_import_bp(self, runner, tmp_path):
+        out = str(tmp_path / "export.csv")
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        runner.invoke(cli, ["export", "--type", "bp", "--output", out])
+        # reimport into a fresh db via a second env
+        result = runner.invoke(cli, ["import", out])
+        assert result.exit_code == 0
+        assert "1 BP" in result.output
+
+    def test_import_weight(self, runner, tmp_path):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        out = str(tmp_path / "export.csv")
+        runner.invoke(cli, ["log", "weight", "75.0"])
+        runner.invoke(cli, ["export", "--type", "weight", "--output", out])
+        result = runner.invoke(cli, ["import", out])
+        assert result.exit_code == 0
+        assert "1 weight" in result.output
+
+    def test_import_all(self, runner, tmp_path):
+        runner.invoke(cli, ["config", "--weight-unit", "kg"])
+        runner.invoke(cli, ["log", "bp", "120", "80"])
+        runner.invoke(cli, ["log", "weight", "75.0"])
+        out = str(tmp_path / "export.csv")
+        runner.invoke(cli, ["export", "--type", "all", "--output", out])
+        result = runner.invoke(cli, ["import", out])
+        assert result.exit_code == 0
+        assert "1 BP" in result.output
+        assert "1 weight" in result.output
+
+    def test_import_bad_row_skipped(self, runner, tmp_path):
+        csv_file = tmp_path / "bad.csv"
+        csv_file.write_text("type,id,timestamp,username,systolic,diastolic,pulse,category,device,note\nbp,1,not-a-date,user,120,80,,,\n")
+        result = runner.invoke(cli, ["import", str(csv_file)])
+        assert result.exit_code == 0
+        assert "skipped" in result.output
+
+
 class TestRollingAvg:
     def test_rolling_avg_shown_with_multiple_readings(self, runner):
         runner.invoke(cli, ["log", "bp", "120", "80"])
