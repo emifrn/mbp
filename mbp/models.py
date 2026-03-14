@@ -49,3 +49,25 @@ class WeightReading:
         if self.unit == "lbs":
             return round(self.value_kg * 2.20462, 1)
         return round(self.value_kg, 1)
+
+    def bmi(self, height_cm: float) -> float:
+        height_m = height_cm / 100.0
+        return round(self.value_kg / (height_m ** 2), 1)
+
+    def bmi_category(self, height_cm: float) -> str:
+        b = self.bmi(height_cm)
+        if b < 18.5:
+            return "Underweight"
+        if b < 25.0:
+            return "Normal"
+        if b < 30.0:
+            return "Overweight"
+        return "Obese"
+
+    def bmi_color(self, height_cm: float) -> str:
+        return {
+            "Underweight": "yellow",
+            "Normal": "green",
+            "Overweight": "orange1",
+            "Obese": "red",
+        }[self.bmi_category(height_cm)]

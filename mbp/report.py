@@ -37,7 +37,7 @@ def print_bp_table(readings: list[BPReading]) -> None:
     console.print(f"[dim]{len(readings)} reading(s)[/dim]")
 
 
-def print_weight_table(readings: list[WeightReading]) -> None:
+def print_weight_table(readings: list[WeightReading], height_cm: float | None = None) -> None:
     if not readings:
         console.print("[dim]No weight readings found.[/dim]")
         return
@@ -48,18 +48,40 @@ def print_weight_table(readings: list[WeightReading]) -> None:
     table = Table(box=box.ROUNDED, show_lines=False, header_style="bold cyan")
     table.add_column("Date", style="dim", min_width=16)
     table.add_column(f"Weight ({display_unit})", justify="right")
+    if height_cm is not None:
+        table.add_column("BMI", justify="right")
+        table.add_column("Category")
     table.add_column("Note")
 
     for r in readings:
-        table.add_row(
-            r.timestamp.strftime("%Y-%m-%d %H:%M"),
+        weight_str = (
             str(r.display_value()) if r.unit == display_unit
-            else str(round(r.value_kg * 2.20462, 1) if display_unit == "lbs" else round(r.value_kg, 1)),
-            r.note or "",
+            else str(round(r.value_kg * 2.20462, 1) if display_unit == "lbs" else round(r.value_kg, 1))
         )
+        if height_cm is not None:
+            bmi_val = r.bmi(height_cm)
+            color = r.bmi_color(height_cm)
+            cat = r.bmi_category(height_cm)
+            table.add_row(
+                r.timestamp.strftime("%Y-%m-%d %H:%M"),
+                weight_str,
+                f"[{color}]{bmi_val}[/{color}]",
+                f"[{color}]{cat}[/{color}]",
+                r.note or "",
+            )
+        else:
+            table.add_row(
+                r.timestamp.strftime("%Y-%m-%d %H:%M"),
+                weight_str,
+                r.note or "",
+            )
 
     console.print(table)
     console.print(f"[dim]{len(readings)} reading(s)[/dim]")
+    if height_cm is None:
+        console.print(
+            "[dim]Tip: run [bold]mbp config --height-unit cm --height 175[/bold] to enable BMI[/dim]"
+        )
 
 
 def print_bp_stats(readings: list[BPReading]) -> None:
@@ -106,7 +128,7 @@ def print_bp_stats(readings: list[BPReading]) -> None:
         )
 
 
-def print_weight_stats(readings: list[WeightReading]) -> None:
+def print_weight_stats(readings: list[WeightReading], height_cm: float | None = None) -> None:
     if not readings:
         console.print("[dim]No weight readings found.[/dim]")
         return
@@ -139,4 +161,34 @@ def print_weight_stats(readings: list[WeightReading]) -> None:
         console.print(
             f"Change since {first_dt}: [{color}]{arrow} {delta:+.1f} {display_unit}[/{color}] "
             f"(to {last_dt})"
+        )
+
+    if height_cm is not None:
+        bmi_vals = [r.bmi(height_cm) for r in readings]
+        bmi_avg = round(sum(bmi_vals) / len(bmi_vals), 1)
+        bmi_min = round(min(bmi_vals), 1)
+        bmi_max = round(max(bmi_vals), 1)
+
+        bmi_table = Table(box=box.SIMPLE_HEAD, header_style="bold cyan", show_edge=False)
+        bmi_table.add_column("BMI Metric")
+        bmi_table.add_column("Value", justify="right")
+        bmi_table.add_row("Average", str(bmi_avg))
+        bmi_table.add_row("Min",     str(bmi_min))
+        bmi_table.add_row("Max",     str(bmi_max))
+
+        console.print(bmi_table)
+
+        # Category breakdown
+        from collections import Counter
+        categories = Counter(r.bmi_category(height_cm) for r in readings)
+        parts = []
+        for cat, color in [("Underweight", "yellow"), ("Normal", "green"),
+                            ("Overweight", "orange1"), ("Obese", "red")]:
+            if cat in categories:
+                parts.append(f"[{color}]{cat}: {categories[cat]}[/{color}]")
+        if parts:
+            console.print("BMI categories: " + "  ".join(parts))
+    else:
+        console.print(
+            "[dim]Tip: run [bold]mbp config --height-unit cm --height 175[/bold] to enable BMI[/dim]"
         )

@@ -97,6 +97,66 @@ def plot_bp_png(readings: list[BPReading], output: Path) -> None:
     print(f"Saved to {output}")
 
 
+def plot_bmi_terminal(readings: list[WeightReading], height_cm: float) -> None:
+    if not readings:
+        print("No weight readings to plot.")
+        return
+
+    import plotext as plt
+
+    dates = [r.timestamp.strftime("%m-%d") for r in readings]
+    bmi_vals = [r.bmi(height_cm) for r in readings]
+
+    plt.clf()
+    plt.theme("dark")
+    plt.title("BMI over Time")
+    plt.xlabel("Date")
+    plt.ylabel("BMI")
+
+    plt.plot(dates, bmi_vals, label="BMI", marker="dot")
+
+    # WHO reference lines
+    plt.hline(18.5, color="yellow+")   # Underweight threshold
+    plt.hline(25.0, color="yellow+")   # Overweight threshold
+    plt.hline(30.0, color="red+")      # Obese threshold
+
+    plt.show()
+
+
+def plot_bmi_png(readings: list[WeightReading], height_cm: float, output: Path) -> None:
+    if not readings:
+        print("No weight readings to plot.")
+        return
+
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+
+    dates    = [r.timestamp for r in readings]
+    bmi_vals = [r.bmi(height_cm) for r in readings]
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(dates, bmi_vals, "o-", color="#9b59b6", linewidth=1.5, markersize=4, label="BMI")
+
+    # WHO reference lines
+    ax.axhline(18.5, color="#f39c12", linewidth=0.8, linestyle="--", label="Underweight (18.5)")
+    ax.axhline(25.0, color="#e67e22", linewidth=0.8, linestyle="--", label="Overweight (25)")
+    ax.axhline(30.0, color="#e74c3c", linewidth=0.8, linestyle="--", label="Obese (30)")
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    fig.autofmt_xdate()
+
+    ax.set_title("BMI over Time", fontsize=14, fontweight="bold")
+    ax.set_ylabel("BMI")
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(output, dpi=150)
+    plt.close(fig)
+    print(f"Saved to {output}")
+
+
 def plot_weight_png(readings: list[WeightReading], output: Path) -> None:
     if not readings:
         print("No weight readings to plot.")

@@ -1,5 +1,7 @@
 import pytest
 from mbp.validate import validate_bp, validate_weight
+from mbp.models import WeightReading
+from datetime import datetime
 
 
 class TestValidateBP:
@@ -58,3 +60,65 @@ class TestValidateWeight:
     def test_too_heavy(self):
         with pytest.raises(ValueError, match="plausible range"):
             validate_weight(600.0, "kg")
+
+
+def _make_weight(value_kg: float) -> WeightReading:
+    return WeightReading(
+        value_kg=value_kg,
+        unit="kg",
+        note=None,
+        username="test",
+        timestamp=datetime.now(),
+    )
+
+
+class TestBMI:
+    def test_bmi_calculation(self):
+        r = _make_weight(70.0)
+        # 70 / (1.75 ** 2) = 22.857...
+        assert r.bmi(175.0) == pytest.approx(22.9, abs=0.1)
+
+    def test_bmi_underweight(self):
+        r = _make_weight(50.0)
+        assert r.bmi_category(175.0) == "Underweight"
+        assert r.bmi_color(175.0) == "yellow"
+
+    def test_bmi_normal(self):
+        r = _make_weight(70.0)
+        assert r.bmi_category(175.0) == "Normal"
+        assert r.bmi_color(175.0) == "green"
+
+    def test_bmi_overweight(self):
+        r = _make_weight(85.0)
+        assert r.bmi_category(175.0) == "Overweight"
+        assert r.bmi_color(175.0) == "orange1"
+
+    def test_bmi_obese(self):
+        r = _make_weight(105.0)
+        assert r.bmi_category(175.0) == "Obese"
+        assert r.bmi_color(175.0) == "red"
+
+    def test_bmi_boundary_normal_lower(self):
+        # BMI of exactly 18.5 should be Normal
+        # weight = 18.5 * (1.75 ** 2) = 56.6...
+        height_cm = 175.0
+        height_m = height_cm / 100.0
+        value_kg = 18.5 * (height_m ** 2)
+        r = _make_weight(value_kg)
+        assert r.bmi_category(height_cm) == "Normal"
+
+    def test_bmi_boundary_overweight(self):
+        # BMI of exactly 25.0 should be Overweight
+        height_cm = 175.0
+        height_m = height_cm / 100.0
+        value_kg = 25.0 * (height_m ** 2)
+        r = _make_weight(value_kg)
+        assert r.bmi_category(height_cm) == "Overweight"
+
+    def test_bmi_boundary_obese(self):
+        # BMI of exactly 30.0 should be Obese
+        height_cm = 175.0
+        height_m = height_cm / 100.0
+        value_kg = 30.0 * (height_m ** 2)
+        r = _make_weight(value_kg)
+        assert r.bmi_category(height_cm) == "Obese"
