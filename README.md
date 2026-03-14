@@ -3,19 +3,6 @@
 A minimal CLI to log and visualize blood pressure and weight over time.
 Data lives in a local SQLite database. No cloud, no accounts.
 
-## Features
-
-- Log blood pressure (systolic / diastolic / pulse)
-- Log weight in your preferred unit (kg or lbs, set once per user)
-- Track height and compute BMI automatically from weight readings
-- View readings in a formatted table with color-coded health categories
-- Plot trends in the terminal with [plotext](https://github.com/piccolomo/plotext)
-- Export publication-quality PNG charts (for sharing with your doctor) via matplotlib
-- Per-user configuration and data isolation
-- Auto-timestamp on every record
-- Input validation with auto-correction (swapped systolic/diastolic, out-of-range values)
-- Optional notes on any reading
-
 ## Quickstart
 
 ```bash
@@ -25,137 +12,158 @@ mbp log bp 120 80 --pulse 65
 mbp report
 ```
 
+## Features
+
+- Log blood pressure (systolic / diastolic / pulse) and weight
+- Track the device/monitor used for each reading
+- BMI computed automatically from weight readings once height is set
+- Color-coded health categories (AHA for BP, WHO for BMI)
+- 7-day rolling average column in BP report
+- Terminal plots and publication-quality PNG export
+- Summary statistics with trend detection
+- Filter any view by date range or device
+- Backfill past readings with `--date`
+- Delete individual readings by ID
+- Export to CSV and re-import
+- Input validation with auto-correction (e.g. swapped systolic/diastolic)
+
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/my-blood-pressure.git
-cd my-blood-pressure
+git clone https://github.com/emifrn/mbp.git
+cd mbp
 pip install -e .
 ```
 
-### Dependencies
+**Dependencies:** `click`, `rich`, `plotext`, `matplotlib`
 
-```
-click
-rich
-plotext
-matplotlib
-```
+## Command Reference
+
+| Command | Description |
+|---|---|
+| `mbp log bp SYSTOLIC DIASTOLIC` | Log a blood pressure reading |
+| `mbp log weight VALUE` | Log a weight reading |
+| `mbp report` | Show readings in a table |
+| `mbp stats` | Show summary statistics and trends |
+| `mbp plot bp\|weight\|bmi` | Plot in terminal or export to PNG |
+| `mbp delete bp\|weight ID` | Delete a reading by ID |
+| `mbp export` | Export readings to CSV |
+| `mbp import FILE` | Import readings from a CSV file |
+| `mbp config` | View or update configuration |
+| `mbp --version` | Show version |
 
 ## Usage
 
-### Blood pressure
+### Log blood pressure
 
 ```bash
-# Log a reading (systolic diastolic)
-mbp log 120 80
-
-# Log with pulse
-mbp log 120 80 --pulse 65
-
-# Log with a note
-mbp log 120 80 --pulse 65 --note "after coffee"
+mbp log bp 120 80
+mbp log bp 120 80 --pulse 65
+mbp log bp 120 80 --pulse 65 --note "after rest"
+mbp log bp 120 80 --device "Omron M3"        # override default device
+mbp log bp 120 80 --date "2026-03-10"         # backfill a past reading
+mbp log bp 120 80 --date "2026-03-10 08:30"
 ```
 
-### Weight
+### Log weight
 
 ```bash
-# First time: set your preferred unit (once per user)
-mbp config --weight-unit kg     # or: lbs
-
-# Log weight
-mbp weight 74.5
-mbp weight 74.5 --note "morning, before breakfast"
+mbp log weight 74.5
+mbp log weight 74.5 --note "morning, before breakfast"
+mbp log weight 74.5 --device "Withings Body"
+mbp log weight 74.5 --date "2026-03-10"
 ```
 
-### BMI
-
-BMI is computed automatically from your weight readings once you set your height:
+### Report
 
 ```bash
-# Set height unit and value (once per user)
-mbp config --height-unit cm --height 175
-# or for imperial users:
-mbp config --height-unit in --height 71
-
-# BMI appears automatically in weight report and stats
-mbp report --type weight
-mbp stats --type weight
-
-# Plot BMI over time
-mbp plot bmi
-mbp plot bmi --png --output ~/Desktop/bmi_march.png
-```
-
-### View readings
-
-```bash
-# Recent readings (default: last 30 days)
-mbp report
-
-# Specify a time range
-mbp report --days 90
+mbp report                          # all readings
+mbp report --type bp                # blood pressure only
+mbp report --type weight            # weight only (shows BMI if height is set)
+mbp report --days 30                # last 30 days
 mbp report --from 2026-01-01 --to 2026-03-01
-
-# Blood pressure only or weight only
-mbp report --type bp
-mbp report --type weight
+mbp report --device "Omron M3"      # filter by device
 ```
 
 ### Statistics
 
 ```bash
-mbp stats            # summary: mean, min, max, trend for all metrics
+mbp stats                           # mean, min, max, trend for all metrics
 mbp stats --type bp
 mbp stats --type weight
+mbp stats --days 90
+mbp stats --device "Omron M3"
 ```
 
 ### Plots
 
 ```bash
-# Terminal plots (quick view)
-mbp plot bp           # systolic & diastolic over time
-mbp plot weight       # weight over time
-mbp plot bmi          # BMI over time (requires height to be configured)
+# Terminal (quick view)
+mbp plot bp
+mbp plot weight
+mbp plot bmi                        # requires height to be configured
 
-# Export to PNG (for sharing)
+# PNG export
 mbp plot bp --png
 mbp plot bp --png --output ~/Desktop/bp_march.png
-
 mbp plot weight --png
-mbp plot weight --png --output ~/Desktop/weight_march.png
-
 mbp plot bmi --png
-mbp plot bmi --png --output ~/Desktop/bmi_march.png
 
-# Time range applies to all plots
+# Time range
 mbp plot bp --days 90
 mbp plot bp --from 2026-01-01
+```
+
+### Delete
+
+Run `mbp report` to find the ID of the reading to remove.
+
+```bash
+mbp delete bp 42
+mbp delete weight 7
+mbp delete bp 42 --yes              # skip confirmation prompt
+```
+
+### Export & Import
+
+```bash
+mbp export                          # all readings to stdout
+mbp export --type bp --output bp.csv
+mbp export --type weight --output weight.csv
+mbp export --days 90 --output recent.csv
+mbp export --device "Omron M3" --output omron.csv
+
+mbp import backup.csv               # re-import from any exported CSV
 ```
 
 ## Configuration
 
 ```bash
-mbp config --name "John"        # set your display name (defaults to system user)
-mbp config --weight-unit kg     # or lbs
-mbp config --height-unit cm     # or in (inches)
-mbp config --height 175         # your height in the configured unit
-mbp config                      # view current settings
+mbp config                                  # view current settings
+mbp config --name "Alice"                   # display name (defaults to system user)
+mbp config --bp-device "Omron M3"          # default BP monitor
+mbp config --weight-device "Withings Body" # default scale
+mbp config --weight-unit kg                # or lbs
+mbp config --height-unit cm               # or in
+mbp config --height 175
 ```
 
 ## Database
 
-By default, the SQLite database is stored at:
+By default, the SQLite database and config are stored in:
 
 ```
 ~/.local/share/mbp/mbp.db
+~/.local/share/mbp/config.json
 ```
 
-Override with the `MBP_DB` environment variable:
+Override with the `MBP_DB` environment variable — config follows automatically:
 
 ```bash
-export MBP_DB=/path/to/my.db
+export MBP_DB=~/work/mbp.db        # db and config both live in ~/work/
 ```
+
+This is also how multiple users share a machine: each sets their own `MBP_DB`.
 
 ## Blood Pressure Reference (AHA)
 
@@ -166,8 +174,6 @@ export MBP_DB=/path/to/my.db
 | High Stage 1 | 130–139 | or | 80–89 |
 | High Stage 2 | ≥ 140 | or | ≥ 90 |
 | Crisis | > 180 | or | > 120 |
-
-`mbp` will warn you if a reading falls into the Elevated or higher category.
 
 ## BMI Reference (WHO)
 
@@ -181,24 +187,23 @@ export MBP_DB=/path/to/my.db
 ## Project Structure
 
 ```
-my-blood-pressure/
+mbp/
 ├── mbp/
-│   ├── __init__.py
-│   ├── cli.py          # click commands
+│   ├── cli.py          # commands
 │   ├── db.py           # SQLite schema & queries
-│   ├── models.py       # dataclasses for BP & weight readings, BMI logic
+│   ├── models.py       # BPReading & WeightReading dataclasses
 │   ├── validate.py     # input validation & auto-correction
-│   ├── plot.py         # plotext (terminal) + matplotlib (PNG)
 │   ├── report.py       # rich table formatting
-│   └── config.py       # per-user config (name, weight unit, height unit, height)
+│   ├── plot.py         # terminal (plotext) & PNG (matplotlib) plots
+│   └── config.py       # configuration (name, units, height, devices)
 ├── tests/
-│   ├── test_validate.py
+│   ├── test_cli.py
 │   ├── test_db.py
-│   └── test_cli.py
+│   └── test_validate.py
 ├── pyproject.toml
 └── README.md
 ```
 
 ## License
 
-MIT
+MIT — © 2026 emifrn
