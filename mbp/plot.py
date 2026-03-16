@@ -17,6 +17,8 @@ def plot_bp_terminal(readings: list[BPReading]) -> None:
     dates = [r.timestamp.strftime("%m-%d") for r in readings]
     systolic  = [r.systolic  for r in readings]
     diastolic = [r.diastolic for r in readings]
+    xs = list(range(len(dates)))
+    step = max(1, len(dates) // 10)
 
     plt.clf()
     plt.theme("dark")
@@ -24,8 +26,9 @@ def plot_bp_terminal(readings: list[BPReading]) -> None:
     plt.xlabel("Date")
     plt.ylabel("mmHg")
 
-    plt.plot(dates, systolic,  label="Systolic",  marker="dot")
-    plt.plot(dates, diastolic, label="Diastolic", marker="dot")
+    plt.plot(xs, systolic,  label="Systolic",  marker="dot")
+    plt.plot(xs, diastolic, label="Diastolic", marker="dot")
+    plt.xticks(xs[::step], dates[::step])
 
     # Reference lines
     plt.hline(120, color="yellow+")   # elevated threshold
@@ -47,6 +50,8 @@ def plot_weight_terminal(readings: list[WeightReading]) -> None:
         round(r.value_kg * 2.20462, 1) if display_unit == "lbs" else round(r.value_kg, 1)
         for r in readings
     ]
+    xs = list(range(len(dates)))
+    step = max(1, len(dates) // 10)
 
     plt.clf()
     plt.theme("dark")
@@ -54,7 +59,8 @@ def plot_weight_terminal(readings: list[WeightReading]) -> None:
     plt.xlabel("Date")
     plt.ylabel(display_unit)
 
-    plt.plot(dates, values, label="Weight", marker="dot")
+    plt.plot(xs, values, label="Weight", marker="dot")
+    plt.xticks(xs[::step], dates[::step])
     plt.show()
 
 
@@ -106,6 +112,8 @@ def plot_bmi_terminal(readings: list[WeightReading], height_cm: float) -> None:
 
     dates = [r.timestamp.strftime("%m-%d") for r in readings]
     bmi_vals = [r.bmi(height_cm) for r in readings]
+    xs = list(range(len(dates)))
+    step = max(1, len(dates) // 10)
 
     plt.clf()
     plt.theme("dark")
@@ -113,7 +121,8 @@ def plot_bmi_terminal(readings: list[WeightReading], height_cm: float) -> None:
     plt.xlabel("Date")
     plt.ylabel("BMI")
 
-    plt.plot(dates, bmi_vals, label="BMI", marker="dot")
+    plt.plot(xs, bmi_vals, label="BMI", marker="dot")
+    plt.xticks(xs[::step], dates[::step])
 
     # WHO reference lines
     plt.hline(18.5, color="yellow+")   # Underweight threshold
