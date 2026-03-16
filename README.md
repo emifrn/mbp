@@ -1,4 +1,4 @@
-# mbp — Blood Pressure & Weight Tracker
+# mbp — My-Blood-Pressure
 
 A minimal CLI to log and visualize blood pressure and weight over time.
 Data lives in a local SQLite database. No cloud, no accounts.
